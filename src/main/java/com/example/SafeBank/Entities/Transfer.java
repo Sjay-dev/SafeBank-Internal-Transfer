@@ -1,5 +1,6 @@
 package com.example.SafeBank.Entities;
 
+import com.example.SafeBank.Entities.Enum.TransferStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
