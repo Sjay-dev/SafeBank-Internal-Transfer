@@ -1,5 +1,6 @@
 package com.example.SafeBank.DTO.Response;
 
+import com.example.SafeBank.Entities.Enum.TransactionType;
 import com.example.SafeBank.Entities.Enum.TransferStatus;
 
 import java.math.BigDecimal;
@@ -12,6 +13,8 @@ public record TransferResponse(
         BigDecimal amount,
         String description,
         TransferStatus status,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        TransactionType transactionType
+
 ) {
 }

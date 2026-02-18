@@ -3,6 +3,7 @@ package com.example.SafeBank.Service;
 import com.example.SafeBank.DTO.Request.TransferRequest;
 import com.example.SafeBank.DTO.Response.Exception.CustomExceptions;
 import com.example.SafeBank.DTO.Response.TransferResponse;
+import com.example.SafeBank.Entities.Enum.TransactionType;
 import com.example.SafeBank.Entities.Enum.TransferStatus;
 import com.example.SafeBank.Entities.Transfer;
 import com.example.SafeBank.Entities.User;
@@ -10,6 +11,10 @@ import com.example.SafeBank.Repository.TransferRepository;
 import com.example.SafeBank.Repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -71,8 +76,48 @@ public class TransferService {
                 savedTransfer.getAmount(),
                 savedTransfer.getDescription(),
                 savedTransfer.getStatus(),
-                savedTransfer.getCreatedAt()
+                savedTransfer.getCreatedAt(),
+                TransactionType.DEBIT
         );
     }
 
+    // ✅ Transfer history method
+    public Page<TransferResponse> getMyTransactionHistory(
+            String email,
+            int page,
+            int size
+    ) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new CustomExceptions.UserNotFoundException("User not found"));
+
+        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
+
+        Page<Transfer> transfers =
+                transferRepository.findBySender_IdOrReceiver_Id(
+                        user.getId(),
+                        user.getId(),
+                        pageable
+                );
+
+        return transfers.map(transfer -> {
+            TransactionType type =
+                    transfer.getSender().getId().equals(user.getId())
+                            ? TransactionType.DEBIT
+                            : TransactionType.CREDIT;
+
+            return new TransferResponse(
+                    transfer.getId(),
+                    transfer.getSender().getAccountNumber(),
+                    transfer.getReceiver().getAccountNumber(),
+                    transfer.getAmount(),
+                    transfer.getDescription(),
+                    transfer.getStatus(),
+                    transfer.getCreatedAt(),
+                    type
+            );
+        });
+    }
+
 }
+
