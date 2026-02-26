@@ -71,8 +71,8 @@ public class TransferService {
         // 7️⃣ Return response
         return new TransferResponse(
                 savedTransfer.getId(),
-                sender.getAccountNumber(),
-                receiver.getAccountNumber(),
+                sender.getAccountNumber().toString(),
+                receiver.getAccountNumber().toString(),
                 savedTransfer.getAmount(),
                 savedTransfer.getDescription(),
                 savedTransfer.getStatus(),
@@ -108,8 +108,8 @@ public class TransferService {
 
             return new TransferResponse(
                     transfer.getId(),
-                    transfer.getSender().getAccountNumber(),
-                    transfer.getReceiver().getAccountNumber(),
+                    transfer.getSender().getAccountNumber().toString(),
+                    transfer.getReceiver().getAccountNumber().toString(),
                     transfer.getAmount(),
                     transfer.getDescription(),
                     transfer.getStatus(),

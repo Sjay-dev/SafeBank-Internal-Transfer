@@ -1,5 +1,6 @@
 package com.example.SafeBank.Entities;
 
+import com.example.SafeBank.Entities.Enum.Role;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -25,22 +26,21 @@ public class User {
     private String email;
 
     @Column(nullable = false, unique = true)
-    private String accountNumber;
+    private Long accountNumber;
 
     @Column(nullable = false)
     private String password;
 
+    @Builder.Default
     @Column(nullable = false)
     private BigDecimal balance = BigDecimal.ZERO;
 
+    @Builder.Default
     @Column(nullable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    // Optional: user roles for future role-based access
+    @Builder.Default
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Role role = Role.USER;
-
-    public enum Role {
-        USER, ADMIN
-    }
 }

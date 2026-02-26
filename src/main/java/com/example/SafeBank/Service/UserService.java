@@ -23,7 +23,7 @@ public class UserService {
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getAccountNumber(),
+                user.getAccountNumber().toString(),
                 user.getBalance(),
                 user.getCreatedAt()
         );

@@ -2,10 +2,12 @@ package com.example.SafeBank.Security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
 
+@Component
 public class JwtTokenProvider {
 
     private final String jwtSecret = "your-super-secret-key-should-be-long-and-secure";

@@ -17,8 +17,8 @@ public class UserController {
 
     @GetMapping("/{accountNumber}")
     public UserResponse getUser(
-            @PathVariable String accountNumber) {
+            @PathVariable Long accountNumber) {
 
-        return userService.getUserByAccountNumber(accountNumber);
+        return userService.getUserByAccountNumber(accountNumber.toString());
     }
 }

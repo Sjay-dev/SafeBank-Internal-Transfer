@@ -13,8 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.UUID;
-
-
+import java.util.concurrent.ThreadLocalRandom;
 
 
 @Service
@@ -47,7 +46,7 @@ public class AuthService {
                 token,
                 "Bearer",
                 user.getEmail(),
-                user.getAccountNumber()
+                user.getAccountNumber().toString()
         );
     }
 
@@ -67,12 +66,13 @@ public class AuthService {
                 token,
                 "Bearer",
                 user.getEmail(),
-                user.getAccountNumber()
+                user.getAccountNumber().toString()
         );
     }
 
-    private String generateAccountNumber() {
-        return UUID.randomUUID().toString().substring(0, 10);
+    private Long generateAccountNumber() {
+        // Generates a 10-digit random number
+        return ThreadLocalRandom.current().nextLong(1000000000L, 9999999999L);
     }
 
 
