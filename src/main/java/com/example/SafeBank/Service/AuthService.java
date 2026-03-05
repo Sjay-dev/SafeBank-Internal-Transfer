@@ -44,7 +44,7 @@ public class AuthService {
 
         return new AuthResponse(
                 token,
-                "Bearer",
+                user.getName(),
                 user.getEmail(),
                 user.getAccountNumber().toString()
         );
@@ -64,7 +64,7 @@ public class AuthService {
 
         return new AuthResponse(
                 token,
-                "Bearer",
+                user.getName(),
                 user.getEmail(),
                 user.getAccountNumber().toString()
         );
