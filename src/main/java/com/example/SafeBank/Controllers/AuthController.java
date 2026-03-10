@@ -1,6 +1,7 @@
 package com.example.SafeBank.Controllers;
 
 import com.example.SafeBank.DTO.Request.AuthRequest;
+import com.example.SafeBank.DTO.Request.GoogleLoginRequest;
 import com.example.SafeBank.DTO.Request.UserRequest;
 import com.example.SafeBank.DTO.Response.AuthResponse;
 import com.example.SafeBank.Service.AuthService;
@@ -26,5 +27,10 @@ public class AuthController {
     @PostMapping("/login")
     public AuthResponse login(@Valid @RequestBody AuthRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/google")
+    public AuthResponse googleLogin(@RequestBody GoogleLoginRequest request) {
+        return authService.googleLogin(request);
     }
 }
