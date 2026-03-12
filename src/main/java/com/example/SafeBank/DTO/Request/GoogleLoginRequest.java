@@ -4,7 +4,7 @@ public class GoogleLoginRequest {
 
     private String idToken;
 
-    public GoogleLoginRequest() {}
+    public GoogleLoginRequest(String s) {}
 
     public String getIdToken() {
         return idToken;
