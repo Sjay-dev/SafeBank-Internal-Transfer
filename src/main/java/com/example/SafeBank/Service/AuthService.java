@@ -38,7 +38,7 @@ public class AuthService {
                 .name(request.name())
                 .email(request.email())
                 .password(passwordEncoder.encode(request.password()))
-                .accountNumber(generateAccountNumber())
+                .accountNumber(generateAccountNumber().toString())
                 .balance(BigDecimal.ZERO)
                 .build();
 
@@ -50,7 +50,8 @@ public class AuthService {
                 token,
                 user.getName(),
                 user.getEmail(),
-                user.getAccountNumber().toString()
+                user.getAccountNumber().toString(),
+                user.getBalance().toString()
         );
     }
 
@@ -71,7 +72,8 @@ public class AuthService {
                 token,
                 user.getName(),
                 user.getEmail(),
-                user.getAccountNumber().toString()
+                user.getAccountNumber().toString(),
+                user.getBalance().toString()
         );
     }
 
@@ -97,7 +99,7 @@ public class AuthService {
                             .name(name)
                             .email(email)
                             .password("") // No password for Google users
-                            .accountNumber(generateAccountNumber())
+                            .accountNumber(generateAccountNumber().toString())
                             .balance(BigDecimal.ZERO)
                             .build();
                     return userRepository.save(newUser);
@@ -111,7 +113,8 @@ public class AuthService {
                 token,
                 user.getName(),
                 user.getEmail(),
-                user.getAccountNumber().toString()
+                user.getAccountNumber().toString(),
+                user.getBalance().toString()
         );
     }
 

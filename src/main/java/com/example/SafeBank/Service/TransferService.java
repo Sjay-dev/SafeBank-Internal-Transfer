@@ -17,6 +17,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Service
@@ -27,10 +28,10 @@ public class TransferService {
     private final TransferRepository transferRepository;
 
     @Transactional
-    public TransferResponse performTransfer(TransferRequest request) {
+    public TransferResponse performTransfer(String email, TransferRequest request) {
 
         // 1️⃣ Get sender
-        User sender = userRepository.findByAccountNumber(request.senderAccountNumber())
+        User sender = userRepository.findByEmail(email)
                 .orElseThrow(() ->
                         new CustomExceptions.UserNotFoundException("Sender not found"));
 
@@ -47,6 +48,11 @@ public class TransferService {
         // 4️⃣ Check balance
         if (sender.getBalance().compareTo(request.amount()) < 0) {
             throw new CustomExceptions.InsufficientBalanceException("Insufficient balance");
+        }
+
+        //Invalid Amount Checker
+        if (request.amount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new CustomExceptions.InvalidTransferException("Invalid amount");
         }
 
         // 5️⃣ Deduct & Add
@@ -73,6 +79,8 @@ public class TransferService {
                 savedTransfer.getId(),
                 sender.getAccountNumber().toString(),
                 receiver.getAccountNumber().toString(),
+                sender.getName(),
+                receiver.getName(),
                 savedTransfer.getAmount(),
                 savedTransfer.getDescription(),
                 savedTransfer.getStatus(),
@@ -101,6 +109,7 @@ public class TransferService {
                 );
 
         return transfers.map(transfer -> {
+
             TransactionType type =
                     transfer.getSender().getId().equals(user.getId())
                             ? TransactionType.DEBIT
@@ -110,6 +119,8 @@ public class TransferService {
                     transfer.getId(),
                     transfer.getSender().getAccountNumber().toString(),
                     transfer.getReceiver().getAccountNumber().toString(),
+                    transfer.getSender().getName(),
+                    transfer.getReceiver().getName(),
                     transfer.getAmount(),
                     transfer.getDescription(),
                     transfer.getStatus(),
@@ -118,6 +129,8 @@ public class TransferService {
             );
         });
     }
+
+
 
 }
 

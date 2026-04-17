@@ -10,6 +10,8 @@ public record TransferResponse(
         Long transferId,
         String senderAccountNumber,
         String receiverAccountNumber,
+        String senderName,
+        String receiverName,
         BigDecimal amount,
         String description,
         TransferStatus status,

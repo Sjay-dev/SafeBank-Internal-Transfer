@@ -5,8 +5,6 @@ import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 
 public record TransferRequest(
-        @NotBlank(message = "Sender account number is required")
-        String senderAccountNumber,
 
         @NotBlank(message = "Receiver account number is required")
         String receiverAccountNumber,

@@ -18,9 +18,11 @@ public class TransferController {
 
     @PostMapping
     public TransferResponse performTransfer(
+            Authentication authentication,
             @Valid @RequestBody TransferRequest request) {
 
-        return transferService.performTransfer(request);
+
+        return transferService.performTransfer(authentication.getName(), request);
     }
 
     @GetMapping("/history")
@@ -32,5 +34,8 @@ public class TransferController {
         String email = authentication.getName();
         return transferService.getMyTransactionHistory(email, page, size);
     }
+
+
+
 
 }
