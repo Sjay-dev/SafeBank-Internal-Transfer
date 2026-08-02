@@ -30,4 +30,25 @@ public class CustomExceptions {
         }
     }
 
+    // Thrown when Paystack API returns an error
+    public static class PaystackException extends RuntimeException {
+        public PaystackException(String message) {
+            super(message);
+        }
+    }
+
+    // Thrown when recipient creation fails
+    public static class RecipientCreationException extends RuntimeException {
+        public RecipientCreationException(String message) {
+            super(message);
+        }
+    }
+
+    // Thrown when transfer fails
+    public static class TransferFailedException extends RuntimeException {
+        public TransferFailedException(String message) {
+            super(message);
+        }
+    }
+
 }
