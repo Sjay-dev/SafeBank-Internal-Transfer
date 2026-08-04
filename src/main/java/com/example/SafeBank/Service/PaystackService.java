@@ -7,6 +7,7 @@ import com.example.SafeBank.DTO.Response.PaystackRecipientResponse;
 import com.example.SafeBank.DTO.Response.PaystackTransferResponse;
 import com.example.SafeBank.DTO.Response.Exception.CustomExceptions;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -16,7 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-public class PaystackService {
+@ConditionalOnProperty(prefix = "external-transfer", name = "provider", havingValue = "paystack")
+public class PaystackService implements ExternalBankTransferGateway {
 
     private final RestClient restClient;
 

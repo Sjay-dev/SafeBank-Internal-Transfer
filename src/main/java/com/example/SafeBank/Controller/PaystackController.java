@@ -1,8 +1,7 @@
 package com.example.SafeBank.Controller;
 
-import com.example.SafeBank.DTO.Response.PaystackApiResponse;
-import com.example.SafeBank.DTO.Response.BankResponse;
-import com.example.SafeBank.Service.PaystackService;
+import com.example.SafeBank.DTO.Response.BankListItem;
+import com.example.SafeBank.Service.BankCatalogService;
 import com.example.SafeBank.Service.ExternalTransferService;
 import org.springframework.http.ResponseEntity;
 import jakarta.validation.constraints.Pattern;
@@ -14,22 +13,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/banks")
+@RequestMapping({"/banks", "/api/banks"})
 @Validated
 public class PaystackController {
 
-    private final PaystackService paystackService;
+    private final BankCatalogService bankCatalogService;
     private final ExternalTransferService externalTransferService;
 
-    public PaystackController(PaystackService paystackService, ExternalTransferService externalTransferService) {
-        this.paystackService = paystackService;
+    public PaystackController(BankCatalogService bankCatalogService, ExternalTransferService externalTransferService) {
+        this.bankCatalogService = bankCatalogService;
         this.externalTransferService = externalTransferService;
     }
 
     @GetMapping
-    public ResponseEntity<PaystackApiResponse<java.util.List<BankResponse>>> getBanks() {
-        var response = paystackService.getAllBanks();
-        return ResponseEntity.ok(response);
+    public ResponseEntity<java.util.List<BankListItem>> getBanks() {
+        return ResponseEntity.ok(bankCatalogService.getNigerianBanks());
     }
 
     @GetMapping("/resolve")

@@ -26,27 +26,30 @@ public class ExternalTransferService {
     private final UserRepository userRepository;
     private final BeneficiaryRepository beneficiaryRepository;
     private final ExternalTransferRepository externalTransferRepository;
-    private final PaystackService paystackService;
+    private final ExternalBankTransferGateway externalBankTransferGateway;
+    private final BankCatalogService bankCatalogService;
 
     public AccountResolutionResponse resolveAccount(String accountNumber, String bankCode) {
-        PaystackAccountResolution resolved = paystackService.resolveAccount(accountNumber, bankCode);
+        bankCatalogService.requireKnownBankCode(bankCode);
+        PaystackAccountResolution resolved = externalBankTransferGateway.resolveAccount(accountNumber, bankCode);
         return new AccountResolutionResponse(resolved.accountName(), resolved.accountNumber(), bankCode);
     }
 
     @Transactional
     public ExternalTransferResponse createTransfer(String email, ExternalTransferRequest request) {
+        bankCatalogService.requireKnownBankCode(request.bankCode());
         User user = userRepository.findByEmailForUpdate(email)
                 .orElseThrow(() -> new CustomExceptions.UserNotFoundException("User not found"));
         if (user.getBalance().compareTo(request.amount()) < 0) {
             throw new CustomExceptions.InsufficientBalanceException("Insufficient balance");
         }
 
-        PaystackAccountResolution resolution = paystackService.resolveAccount(request.accountNumber(), request.bankCode());
+        PaystackAccountResolution resolution = externalBankTransferGateway.resolveAccount(request.accountNumber(), request.bankCode());
         Beneficiary beneficiary = findOrCreateBeneficiary(user, request, resolution.accountName());
         String reference = "safebank_" + UUID.randomUUID();
 
         user.setBalance(user.getBalance().subtract(request.amount()));
-        PaystackTransferResponse paystackTransfer = paystackService.initiateTransfer(
+        PaystackTransferResponse paystackTransfer = externalBankTransferGateway.initiateTransfer(
                 toKobo(request.amount()), beneficiary.getRecipientCode(), reference, request.narration());
         TransferStatus status = toStatus(paystackTransfer.status());
         if (status == TransferStatus.FAILED) {
@@ -65,7 +68,7 @@ public class ExternalTransferService {
     public ExternalTransferResponse verifyTransfer(String email, String reference) {
         ExternalTransfer transfer = externalTransferRepository.findByReferenceAndUserEmailForUpdate(reference, email)
                 .orElseThrow(() -> new CustomExceptions.UserNotFoundException("Transfer not found"));
-        PaystackTransferResponse result = paystackService.verifyTransfer(reference);
+        PaystackTransferResponse result = externalBankTransferGateway.verifyTransfer(reference);
         TransferStatus previousStatus = transfer.getStatus();
         TransferStatus updatedStatus = toStatus(result.status());
         transfer.setStatus(updatedStatus);
@@ -84,7 +87,7 @@ public class ExternalTransferService {
         return beneficiaryRepository.findByUser_IdAndAccountNumberAndBankCode(
                         user.getId(), request.accountNumber(), request.bankCode())
                 .orElseGet(() -> {
-                    PaystackRecipientResponse recipient = paystackService.createRecipient(
+                    PaystackRecipientResponse recipient = externalBankTransferGateway.createRecipient(
                             accountName, request.accountNumber(), request.bankCode());
                     if (recipient.recipientCode() == null || recipient.recipientCode().isBlank()) {
                         throw new CustomExceptions.RecipientCreationException("Paystack did not return a recipient code");
