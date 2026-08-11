@@ -25,9 +25,8 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
-    private final GoogleTokenVerifierService googleTokenVerifierService; // Add this
+    private final GoogleTokenVerifierService googleTokenVerifierService;
 
-    // Existing register
     public AuthResponse register(UserRequest request) {
 
         if (userRepository.findByEmail(request.email()).isPresent()) {
@@ -55,7 +54,6 @@ public class AuthService {
         );
     }
 
-    // Existing login
     public AuthResponse login(AuthRequest request) {
 
         User user = userRepository.findByEmail(request.email())
@@ -77,12 +75,8 @@ public class AuthService {
         );
     }
 
-    // --------------------------
-    // NEW: Google login method
-    // --------------------------
     public AuthResponse googleLogin(GoogleLoginRequest request) {
 
-        // Verify Google ID token
         GoogleIdToken.Payload payload = googleTokenVerifierService.verify(request.getIdToken());
 
         if (payload == null) {
@@ -92,23 +86,20 @@ public class AuthService {
         String email = payload.getEmail();
         String name = (String) payload.get("name");
 
-        // Find existing user or create new one
         User user = userRepository.findByEmail(email)
                 .orElseGet(() -> {
                     User newUser = User.builder()
                             .name(name)
                             .email(email)
-                            .password("") // No password for Google users
+                            .password("")
                             .accountNumber(generateAccountNumber().toString())
                             .balance(BigDecimal.ZERO)
                             .build();
                     return userRepository.save(newUser);
                 });
 
-        // Generate JWT
         String token = jwtTokenProvider.generateToken(user.getEmail());
 
-        // Return response matching existing format
         return new AuthResponse(
                 token,
                 user.getName(),
@@ -118,9 +109,6 @@ public class AuthService {
         );
     }
 
-    // --------------------------
-    // Private helper
-    // --------------------------
     private Long generateAccountNumber() {
         return ThreadLocalRandom.current().nextLong(1000000000L, 9999999999L);
     }

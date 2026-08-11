@@ -29,56 +29,39 @@ public class TransferService {
 
     @Transactional
     public TransferResponse performTransfer(String email, TransferRequest request) {
-
-        // 1️⃣ Get sender
         User sender = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new CustomExceptions.UserNotFoundException("Sender not found"));
-
-        // 2️⃣ Get receiver
+                .orElseThrow(() -> new CustomExceptions.UserNotFoundException("Sender not found"));
         User receiver = userRepository.findByAccountNumber(request.receiverAccountNumber())
-                .orElseThrow(() ->
-                        new CustomExceptions.UserNotFoundException("Receiver not found"));
+                .orElseThrow(() -> new CustomExceptions.UserNotFoundException("Receiver not found"));
 
-        // 3️⃣ Prevent self transfer
         if (sender.getAccountNumber().equals(receiver.getAccountNumber())) {
             throw new CustomExceptions.InvalidTransferException("Cannot transfer to yourself");
         }
-
-        // 4️⃣ Check balance
         if (sender.getBalance().compareTo(request.amount()) < 0) {
             throw new CustomExceptions.InsufficientBalanceException("Insufficient balance");
         }
-
-        //Invalid Amount Checker
         if (request.amount().compareTo(BigDecimal.ZERO) <= 0) {
             throw new CustomExceptions.InvalidTransferException("Invalid amount");
         }
 
-        // 5️⃣ Deduct & Add
         sender.setBalance(sender.getBalance().subtract(request.amount()));
         receiver.setBalance(receiver.getBalance().add(request.amount()));
-
         userRepository.save(sender);
         userRepository.save(receiver);
 
-        // 6️⃣ Save transfer record
-        Transfer transfer = Transfer.builder()
+        Transfer savedTransfer = transferRepository.save(Transfer.builder()
                 .sender(sender)
                 .receiver(receiver)
                 .amount(request.amount())
                 .description(request.description())
                 .status(TransferStatus.SUCCESS)
                 .createdAt(LocalDateTime.now())
-                .build();
+                .build());
 
-        Transfer savedTransfer = transferRepository.save(transfer);
-
-        // 7️⃣ Return response
         return new TransferResponse(
                 savedTransfer.getId(),
-                sender.getAccountNumber().toString(),
-                receiver.getAccountNumber().toString(),
+                sender.getAccountNumber(),
+                receiver.getAccountNumber(),
                 sender.getName(),
                 receiver.getName(),
                 savedTransfer.getAmount(),
@@ -89,48 +72,25 @@ public class TransferService {
         );
     }
 
-    // ✅ Transfer history method
-    public Page<TransferResponse> getMyTransactionHistory(
-            String email,
-            int page,
-            int size
-    ) {
+    public Page<TransferResponse> getMyTransactionHistory(String email, int page, int size) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new CustomExceptions.UserNotFoundException("User not found"));
-
+                .orElseThrow(() -> new CustomExceptions.UserNotFoundException("User not found"));
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt").descending());
 
-        Page<Transfer> transfers =
-                transferRepository.findBySender_IdOrReceiver_Id(
-                        user.getId(),
-                        user.getId(),
-                        pageable
-                );
-
-        return transfers.map(transfer -> {
-
-            TransactionType type =
-                    transfer.getSender().getId().equals(user.getId())
-                            ? TransactionType.DEBIT
-                            : TransactionType.CREDIT;
-
-            return new TransferResponse(
-                    transfer.getId(),
-                    transfer.getSender().getAccountNumber().toString(),
-                    transfer.getReceiver().getAccountNumber().toString(),
-                    transfer.getSender().getName(),
-                    transfer.getReceiver().getName(),
-                    transfer.getAmount(),
-                    transfer.getDescription(),
-                    transfer.getStatus(),
-                    transfer.getCreatedAt(),
-                    type
-            );
-        });
+        return transferRepository.findBySender_IdOrReceiver_Id(user.getId(), user.getId(), pageable)
+                .map(transfer -> new TransferResponse(
+                        transfer.getId(),
+                        transfer.getSender().getAccountNumber(),
+                        transfer.getReceiver().getAccountNumber(),
+                        transfer.getSender().getName(),
+                        transfer.getReceiver().getName(),
+                        transfer.getAmount(),
+                        transfer.getDescription(),
+                        transfer.getStatus(),
+                        transfer.getCreatedAt(),
+                        transfer.getSender().getId().equals(user.getId())
+                                ? TransactionType.DEBIT
+                                : TransactionType.CREDIT
+                ));
     }
-
-
-
 }
-

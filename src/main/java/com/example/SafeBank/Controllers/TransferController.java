@@ -20,8 +20,6 @@ public class TransferController {
     public TransferResponse performTransfer(
             Authentication authentication,
             @Valid @RequestBody TransferRequest request) {
-
-
         return transferService.performTransfer(authentication.getName(), request);
     }
 
@@ -34,8 +32,4 @@ public class TransferController {
         String email = authentication.getName();
         return transferService.getMyTransactionHistory(email, page, size);
     }
-
-
-
-
 }

@@ -15,26 +15,29 @@ import java.util.List;
 @Service
 public class BankCatalogService {
     private final BankRepository bankRepository;
-    private final ExternalBankTransferGateway gateway;
+    private final PaystackService paystackService;
     private final BankCatalogProperties properties;
 
-    public BankCatalogService(BankRepository bankRepository, ExternalBankTransferGateway gateway,
+    public BankCatalogService(BankRepository bankRepository, PaystackService paystackService,
                               BankCatalogProperties properties) {
         this.bankRepository = bankRepository;
-        this.gateway = gateway;
+        this.paystackService = paystackService;
         this.properties = properties;
     }
 
     @Transactional
     public List<BankListItem> getNigerianBanks() {
+
         List<Bank> storedBanks = bankRepository.findAllByOrderByNameAsc();
-        if (isFresh(storedBanks)) return toItems(storedBanks);
+
+        if (isFresh(storedBanks)) {
+            return toItems(storedBanks);
+        }
 
         try {
             refreshFromProvider();
             return toItems(bankRepository.findAllByOrderByNameAsc());
         } catch (CustomExceptions.PaystackException ex) {
-            // A previously stored catalogue keeps bank selection available during a provider outage.
             if (!storedBanks.isEmpty()) return toItems(storedBanks);
             throw ex;
         }
@@ -56,12 +59,8 @@ public class BankCatalogService {
     }
 
     private void refreshFromProvider() {
-        var response = gateway.getAllBanks();
-        if (response == null || !response.isStatus() || response.getData() == null) {
-            throw new CustomExceptions.PaystackException("Unable to fetch Nigerian bank list");
-        }
         LocalDateTime refreshedAt = LocalDateTime.now();
-        List<Bank> banks = response.getData().stream()
+        List<Bank> banks = paystackService.getAllBanks().stream()
                 .filter(bank -> bank.getCode() != null && !bank.getCode().isBlank())
                 .filter(bank -> bank.getName() != null && !bank.getName().isBlank())
                 .map(bank -> new Bank(bank.getCode(), bank.getName(), refreshedAt))

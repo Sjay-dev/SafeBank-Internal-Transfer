@@ -6,7 +6,6 @@ import lombok.Setter;
 @Setter
 @Getter
 public class BankResponse {
-    // Getters and setters
     private String code;
     private String name;
     private String sortCode;

@@ -4,21 +4,17 @@ import com.example.SafeBank.DTO.Response.BankResponse;
 import com.example.SafeBank.DTO.Response.PaystackAccountResolution;
 import com.example.SafeBank.DTO.Response.PaystackApiResponse;
 import com.example.SafeBank.DTO.Response.PaystackRecipientResponse;
-import com.example.SafeBank.DTO.Response.PaystackTransferResponse;
 import com.example.SafeBank.DTO.Response.Exception.CustomExceptions;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
-import org.springframework.web.util.UriBuilder;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
-@ConditionalOnProperty(prefix = "external-transfer", name = "provider", havingValue = "paystack")
-public class PaystackService implements ExternalBankTransferGateway {
+public class PaystackService {
 
     private final RestClient restClient;
 
@@ -26,10 +22,14 @@ public class PaystackService implements ExternalBankTransferGateway {
         this.restClient = paystackRestClient;
     }
 
-    public PaystackApiResponse<List<BankResponse>> getAllBanks() {
-        return execute(() -> restClient.get()
-                .uri(uriBuilder -> uriBuilder.path("/bank").queryParam("country", "nigeria").build())
-                .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<List<BankResponse>>>() {}));
+    public List<BankResponse> getAllBanks() {
+        PaystackApiResponse<List<BankResponse>> response = execute(() -> restClient.get()
+                .uri(uriBuilder -> uriBuilder.path("/bank")
+                        .queryParam("country", "nigeria")
+                        .build())
+                .retrieve()
+                .body(new ParameterizedTypeReference<PaystackApiResponse<List<BankResponse>>>() {}));
+        return successfulData(response, "Unable to fetch Nigerian bank list");
     }
 
     public PaystackAccountResolution resolveAccount(String accountNumber, String bankCode) {
@@ -49,24 +49,6 @@ public class PaystackService implements ExternalBankTransferGateway {
                         "bank_code", bankCode, "currency", "NGN"))
                 .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<PaystackRecipientResponse>>() {}));
         return successfulData(response, "Unable to create transfer recipient");
-    }
-
-    public PaystackTransferResponse initiateTransfer(long amountInKobo, String recipientCode,
-                                                     String reference, String narration) {
-        PaystackApiResponse<PaystackTransferResponse> response = execute(() -> restClient.post()
-                .uri("/transfer")
-                .contentType(org.springframework.http.MediaType.APPLICATION_JSON)
-                .body(Map.of("source", "balance", "amount", amountInKobo, "recipient", recipientCode,
-                        "reference", reference, "reason", narration, "currency", "NGN"))
-                .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<PaystackTransferResponse>>() {}));
-        return successfulData(response, "Unable to initiate transfer");
-    }
-
-    public PaystackTransferResponse verifyTransfer(String reference) {
-        PaystackApiResponse<PaystackTransferResponse> response = execute(() -> restClient.get()
-                .uri("/transfer/verify/{reference}", reference)
-                .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<PaystackTransferResponse>>() {}));
-        return successfulData(response, "Unable to verify transfer");
     }
 
     private <T> T successfulData(PaystackApiResponse<T> response, String fallbackMessage) {
