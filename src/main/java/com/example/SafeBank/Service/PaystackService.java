@@ -9,12 +9,17 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.List;
 import java.util.Map;
 
 @Service
 public class PaystackService {
+
+    private static final String TEST_BANK_CODE = "001";
+    private static final String TEST_MODE_RESOLVE_LIMIT_MESSAGE =
+            "Test mode daily limit of 3 live bank resolves exceeded. Use test bank codes 001 or upgrade to live mode.";
 
     private final RestClient restClient;
 
@@ -33,12 +38,49 @@ public class PaystackService {
     }
 
     public PaystackAccountResolution resolveAccount(String accountNumber, String bankCode) {
-        PaystackApiResponse<PaystackAccountResolution> response = execute(() -> restClient.get()
+        return resolveAccount(accountNumber, bankCode, false);
+    }
+
+    private PaystackAccountResolution resolveAccount(String accountNumber, String bankCode, boolean fallbackAttempted) {
+        PaystackApiResponse<PaystackAccountResolution> response;
+        try {
+            response = resolveAccountWithBankCode(accountNumber, bankCode);
+        } catch (RestClientResponseException ex) {
+            // Retry only Paystack's documented test-mode rate-limit response with test bank code 001.
+            if (!fallbackAttempted && isTestModeResolveLimit(ex)) {
+                return resolveAccount(accountNumber, TEST_BANK_CODE, true);
+            }
+            throw new CustomExceptions.PaystackException("Paystack request failed");
+        } catch (RestClientException ex) {
+            throw new CustomExceptions.PaystackException("Paystack request failed");
+        }
+
+        // Paystack permits test-bank code 001 after its daily live-bank resolution limit is reached.
+        if (!fallbackAttempted && isTestModeResolveLimit(response)) {
+            return resolveAccount(accountNumber, TEST_BANK_CODE, true);
+        }
+        return successfulData(response, "Unable to resolve bank account");
+    }
+
+    private PaystackApiResponse<PaystackAccountResolution> resolveAccountWithBankCode(
+            String accountNumber, String bankCode) {
+        return restClient.get()
                 .uri(uriBuilder -> uriBuilder.path("/bank/resolve")
                         .queryParam("account_number", accountNumber)
                         .queryParam("bank_code", bankCode).build())
-                .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<PaystackAccountResolution>>() {}));
-        return successfulData(response, "Unable to resolve bank account");
+                .retrieve().body(new ParameterizedTypeReference<PaystackApiResponse<PaystackAccountResolution>>() {});
+    }
+
+    private boolean isTestModeResolveLimit(PaystackApiResponse<?> response) {
+        return response != null
+                && !response.isStatus()
+                && response.getMessage() != null
+                && response.getMessage().contains(TEST_MODE_RESOLVE_LIMIT_MESSAGE);
+    }
+
+    private boolean isTestModeResolveLimit(RestClientResponseException ex) {
+        return ex.getStatusCode().value() == 429
+                && ex.getResponseBodyAsString().contains(TEST_MODE_RESOLVE_LIMIT_MESSAGE);
     }
 
     public PaystackRecipientResponse createRecipient(String name, String accountNumber, String bankCode) {

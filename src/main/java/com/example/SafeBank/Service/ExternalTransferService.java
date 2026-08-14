@@ -8,6 +8,7 @@ import com.example.SafeBank.DTO.Response.PaystackRecipientResponse;
 import com.example.SafeBank.DTO.Response.Exception.CustomExceptions;
 import com.example.SafeBank.Entities.Beneficiary;
 import com.example.SafeBank.Entities.ExternalTransfer;
+import com.example.SafeBank.Entities.Enum.TransferChannel;
 import com.example.SafeBank.Entities.User;
 import com.example.SafeBank.Repository.BeneficiaryRepository;
 import com.example.SafeBank.Repository.ExternalTransferRepository;
@@ -28,6 +29,7 @@ public class ExternalTransferService {
     private final PaystackService paystackService;
 
     public AccountResolutionResponse resolveAccount(String accountNumber, String bankCode) {
+        rejectTestFallbackBankCode(bankCode);
         bankCatalogService.requireKnownBankCode(bankCode);
         PaystackAccountResolution resolved = paystackService.resolveAccount(accountNumber, bankCode);
         return new AccountResolutionResponse(resolved.accountName(), resolved.accountNumber(), bankCode);
@@ -35,7 +37,7 @@ public class ExternalTransferService {
 
     @Transactional
     public ExternalTransferResponse createTransfer(String email, ExternalTransferRequest request) {
-        bankCatalogService.requireKnownBankCode(request.bankCode());
+        rejectTestFallbackBankCode(request.bankCode());
         User user = userRepository.findByEmailForUpdate(email)
                 .orElseThrow(() -> new CustomExceptions.UserNotFoundException("User not found"));
         if (user.getBalance().compareTo(request.amount()) < 0) {
@@ -43,6 +45,7 @@ public class ExternalTransferService {
         }
 
         PaystackAccountResolution resolution = paystackService.resolveAccount(request.accountNumber(), request.bankCode());
+        String bankName = bankCatalogService.getKnownBankName(request.bankCode());
         Beneficiary beneficiary = findOrCreateBeneficiary(user, request, resolution.accountName());
         MockTransferResult transferResult = externalBankTransferGateway.executeSuccessfulTransfer();
 
@@ -50,10 +53,11 @@ public class ExternalTransferService {
 
         ExternalTransfer transfer = ExternalTransfer.builder()
                 .user(user).amount(request.amount()).bankCode(request.bankCode())
+                .bankName(bankName)
                 .accountNumber(request.accountNumber()).accountName(resolution.accountName())
                 .recipientCode(beneficiary.getRecipientCode()).reference(transferResult.reference())
                 .transferCode(transferResult.transferCode()).narration(request.narration())
-                .status(transferResult.status()).build();
+                .status(transferResult.status()).transferChannel(TransferChannel.EXTERNAL_BANK_TRANSFER).build();
         return toResponse(externalTransferRepository.save(transfer));
     }
 
@@ -76,6 +80,12 @@ public class ExternalTransferService {
                             .accountNumber(request.accountNumber()).bankCode(request.bankCode())
                             .accountName(accountName).recipientCode(recipient.recipientCode()).build());
                 });
+    }
+
+    private void rejectTestFallbackBankCode(String bankCode) {
+        if ("001".equals(bankCode)) {
+            throw new CustomExceptions.InvalidTransferException("Bank code 001 is reserved for internal account-resolution fallback");
+        }
     }
 
     private ExternalTransferResponse toResponse(ExternalTransfer transfer) {

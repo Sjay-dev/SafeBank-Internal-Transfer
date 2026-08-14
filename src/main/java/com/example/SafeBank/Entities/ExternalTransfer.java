@@ -1,6 +1,7 @@
 package com.example.SafeBank.Entities;
 
 import com.example.SafeBank.Entities.Enum.TransferStatus;
+import com.example.SafeBank.Entities.Enum.TransferChannel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -30,6 +31,9 @@ public class ExternalTransfer {
     @Column(name = "bank_code", nullable = false, length = 20)
     private String bankCode;
 
+    @Column(name = "bank_name", nullable = false, length = 200)
+    private String bankName;
+
     @Column(name = "account_number", nullable = false, length = 20)
     private String accountNumber;
 
@@ -51,6 +55,10 @@ public class ExternalTransfer {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private TransferStatus status;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "transfer_channel", nullable = false, length = 30)
+    private TransferChannel transferChannel;
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;

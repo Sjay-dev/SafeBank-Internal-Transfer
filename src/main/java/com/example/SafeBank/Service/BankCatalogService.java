@@ -46,9 +46,17 @@ public class BankCatalogService {
     /** Ensures account-resolution and transfer requests only use a backend-issued bank code. */
     public void requireKnownBankCode(String bankCode) {
         getNigerianBanks();
+
         if (bankCode == null || bankRepository.findById(bankCode).isEmpty()) {
             throw new CustomExceptions.InvalidTransferException("Unknown bank code");
         }
+    }
+
+    public String getKnownBankName(String bankCode) {
+        requireKnownBankCode(bankCode);
+        return bankRepository.findById(bankCode)
+                .map(Bank::getName)
+                .orElseThrow(() -> new CustomExceptions.InvalidTransferException("Unknown bank code"));
     }
 
     private boolean isFresh(List<Bank> storedBanks) {

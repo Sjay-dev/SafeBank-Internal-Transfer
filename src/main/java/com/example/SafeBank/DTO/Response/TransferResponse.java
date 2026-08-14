@@ -2,6 +2,7 @@ package com.example.SafeBank.DTO.Response;
 
 import com.example.SafeBank.Entities.Enum.TransactionType;
 import com.example.SafeBank.Entities.Enum.TransferStatus;
+import com.example.SafeBank.Entities.Enum.TransferChannel;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -16,7 +17,12 @@ public record TransferResponse(
         String description,
         TransferStatus status,
         LocalDateTime createdAt,
-        TransactionType transactionType
+        TransactionType transactionType,
+        TransferChannel transferChannel,
+        String recipientBankName,
+        String recipientBankCode,
+        String transferReference,
+        String transferCode
 
 ) {
 }
