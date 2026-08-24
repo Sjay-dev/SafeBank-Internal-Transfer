@@ -1,11 +1,10 @@
-FROM eclipse-temurin:17-jdk
+FROM gradle:8.14-jdk17
 
 WORKDIR /app
 
 COPY . .
 
-RUN chmod +x ./gradlew
-RUN ./gradlew clean bootJar --no-daemon
+RUN gradle clean bootJar --no-daemon
 
 EXPOSE 8080
 
