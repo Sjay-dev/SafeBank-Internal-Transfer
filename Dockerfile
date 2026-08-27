@@ -1,11 +1,15 @@
-FROM gradle:8.14-jdk17
+FROM maven:3.9.11-eclipse-temurin-17
 
 WORKDIR /app
 
-COPY . .
+COPY pom.xml .
 
-RUN gradle clean bootJar --no-daemon
+RUN mvn dependency:go-offline -B
+
+COPY src ./src
+
+RUN mvn clean package -DskipTests -B
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "java -jar build/libs/*.jar"]
+CMD ["sh", "-c", "java -jar target/*.jar"]
